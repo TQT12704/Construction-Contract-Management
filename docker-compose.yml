@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: detaithuctap-db
+    environment:
+      POSTGRES_DB: project
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Quangtien12@"
+    ports:
+      - "1207:5432"  # Tuỳ chọn: truy cập DB từ ngoài (PGAdmin/psql)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d project"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: detaithuctap-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/project
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: "Quangtien12@"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: Y1hsM1pYSjBlV2wwYkdsdVpYUnZaR1Z0YjNOMFpYSmxkbVZ5ZVd4dmJtYz0=
+      JWT_EXPIRATION: "3600000"
+    ports:
+      - "8080:8080"
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_BASE: /api
+    container_name: detaithuctap-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: always
+
+volumes:
+  pgdata:
